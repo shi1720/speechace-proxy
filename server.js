@@ -15,8 +15,12 @@ const port = process.env.PORT || 3000;
 const upload = multer();
 
 // Update this with your Firebase app URLs
-const allowedOrigins = ['https://alphavocab-34746.web.app/', 'https://alphavocab-34746.firebaseapp.com/', 'http://localhost:3000'];
+const allowedOrigins = ['https://alphavocab-34746.web.app', 'https://alphavocab-34746.firebaseapp.com', 'http://localhost:3000'];
 
+// Preflight request handling
+app.options('*', cors());
+
+// CORS middleware
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
@@ -25,7 +29,10 @@ app.use(cors({
             return callback(new Error(msg), false);
         }
         return callback(null, true);
-    }
+    },
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
 }));
 
 app.use(express.json());
