@@ -38,7 +38,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const SPEECHACE_API_KEY = process.env.SPEECHACE_API_KEY || "O5ckl2iZ%2BZL%2BObNIZ2C97Idf54nmJSbe4rVnS93EP1I8CKI9x5vwjqCpOL89jZ4lOZMz3tpsxgbh5%2FioyMdV6YgUyjaPff8F366fVxF1%2BJn1MtAgEQbmZO96Us7mgH3W";
+const SPEECHACE_API_KEY = "x1FETWgpkU7CszjYfNxJF84YLxH%2B8r7ptAQBquRT2DWO0L%2BLCci9n%2BPgw9GW4s2zqZqtqoCP1pe%2B9L2wyGKBmakVAI4Tqry4RAbkQw4xutFzeFNc3AxZOgVyS2i6rD%2Fp";
 const SPEECHACE_API_URL = "https://api.speechace.co/api/scoring/text/v9/json";
 
 app.post('/api/speechace', upload.single('user_audio_file'), async (req, res) => {
