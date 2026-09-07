@@ -1,85 +1,14 @@
-import express from 'express';
-import cors from 'cors';
-import axios from 'axios';
-import multer from 'multer';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import FormData from 'form-data';
+import { createApp } from './app.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const app = express();
-const port = process.env.PORT || 3000;
-
-const upload = multer();
-
-// Update this with your Firebase app URLs
-const allowedOrigins = ['https://alphavocab-34746.web.app', 'https://alphavocab-34746.firebaseapp.com', 'http://localhost:3000'];
-
-// Preflight request handling
-app.options('*', cors());
-
-// CORS middleware
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            var msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
-        }
-        return callback(null, true);
-    },
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-}));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-const SPEECHACE_API_KEY = "rXHdTzZ7GVf%2FR3HMUcsuZ%2FaMhTl9FmZZLWFULTEWsIp4I%2Bg4s%2BwG5gBLJRkuoz24Un66lpjlZAcxQkDSb43hW1GDarGHkuiFww%2B%2FeK%2B%2Ft8mP9rycGOmS4rmoWmJcBqGe";
-const SPEECHACE_API_URL = "https://api.speechace.co/api/scoring/text/v9/json";
-
-app.post('/api/speechace', upload.single('user_audio_file'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No audio file provided' });
-        }
-
-        const formData = new FormData();
-        formData.append('text', req.body.text);
-        formData.append('user_audio_file', req.file.buffer, req.file.originalname);
-        formData.append('question_info', req.body.question_info);
-        formData.append('no_mc', req.body.no_mc);
-
-        const response = await axios.post(SPEECHACE_API_URL, formData, {
-            params: {
-                key: SPEECHACE_API_KEY,
-                dialect: req.query.dialect,
-                user_id: req.query.user_id,
-            },
-            headers: {
-                ...formData.getHeaders(),
-            },
-        });
-
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error proxying request to Speechace:', error);
-        if (error.response) {
-            console.error('Speechace API response:', error.response.data);
-            res.status(error.response.status).json({ error: 'Error from Speechace API', details: error.response.data });
-        } else if (error.request) {
-            console.error('No response received from Speechace API');
-            res.status(500).json({ error: 'No response received from Speechace API' });
-        } else {
-            console.error('Error setting up the request:', error.message);
-            res.status(500).json({ error: 'Error setting up the request', message: error.message });
-        }
-    }
+const apiKey = process.env.SPEECHACE_API_KEY;
+const proxyToken = process.env.PROXY_API_TOKEN;
+if (!apiKey) throw new Error('Set SPEECHACE_API_KEY before starting the proxy.');
+if (process.env.NODE_ENV === 'production' && !proxyToken) {
+  throw new Error('Set PROXY_API_TOKEN in production and keep it in your trusted backend.');
+}
+const origins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',').map(x => x.trim()).filter(Boolean);
+const app = createApp({ apiKey, origins, proxyToken });
+const server = app.listen(Number(process.env.PORT || 3000), process.env.HOST || '127.0.0.1', () => {
+  console.log('Speechace proxy is ready.');
 });
-
-app.listen(port, () => {
-    console.log(`Proxy server listening at http://localhost:${port}`);
-});
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => server.close());
